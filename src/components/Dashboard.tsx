@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type React from 'react';
 import type { UsageStats } from '../types/usage';
 import { Badge } from './ui/badge';
@@ -225,7 +226,7 @@ interface DashboardProps {
   status: 'safe' | 'warning' | 'critical';
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
+export const Dashboard: React.FC<DashboardProps> = memo(({ stats, status }) => {
   const { getStatusColor, getStatusIcon } = getStatusHelpers(status);
 
   return (
@@ -623,4 +624,4 @@ export const Dashboard: React.FC<DashboardProps> = ({ stats, status }) => {
       </div>
     </TooltipProvider>
   );
-};
+});

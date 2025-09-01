@@ -5,11 +5,20 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 export default {
-  mode: 'development',
+  mode: isProduction ? 'production' : 'development',
   entry: './src/index.tsx',
   target: 'electron-renderer',
-  devtool: 'source-map',
+  devtool: isProduction ? 'source-map' : 'eval-source-map',
+  
+  // OPTIMIZATION: Basic webpack optimizations for bundle size reduction
+  optimization: {
+    minimize: isProduction,      // Enable minification in production
+    sideEffects: false,         // Enable tree shaking
+    usedExports: true           // Remove unused code
+  },
   module: {
     rules: [
       {

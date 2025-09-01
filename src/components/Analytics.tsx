@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { UsageStats } from '../types/usage';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -543,7 +543,7 @@ const MainChart: React.FC<{
   );
 };
 
-export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
+export const Analytics: React.FC<AnalyticsProps> = memo(({ stats }) => {
   const [timeRange, setTimeRange] = useState<ChartTimeRange>('7d');
   const [chartType, setChartType] = useState<ChartType>('area');
   const [selectedMetric, setSelectedMetric] = useState<'tokens' | 'cost'>('tokens');
@@ -948,4 +948,4 @@ export const Analytics: React.FC<AnalyticsProps> = ({ stats }) => {
       </div>
     </TooltipProvider>
   );
-};
+});
