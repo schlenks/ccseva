@@ -163,9 +163,15 @@ export class CCUsageService {
         loadSessionBlockData({
           sessionDurationHours: 5, // Claude uses 5-hour sessions
           mode: 'calculate', // Calculate costs from tokens for accuracy
+          // v16 enhancements
+          timezone: this.resetTimeService.getConfiguration().timezone,
+          locale: 'en-US',
+          // Note: costSource may not be available in data-loader API
         }),
         loadDailyUsageData({
           mode: 'calculate', // Calculate costs from tokens
+          timezone: this.resetTimeService.getConfiguration().timezone,
+          locale: 'en-US',
         }),
       ]);
 

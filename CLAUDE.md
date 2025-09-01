@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CCSeva is a macOS menu bar Electron application that monitors Claude Code usage in real-time. The app uses the `ccusage` npm package API to fetch token usage data and displays it through a modern React-based UI with tabbed navigation, analytics, notifications, and visualizations.
+CCSeva is a macOS menu bar Electron application that monitors Claude Code usage in real-time. The app uses the `ccusage` npm package API (v16.2.0) to fetch token usage data and displays it through a modern React-based UI with tabbed navigation, analytics, notifications, and visualizations.
 
 ## Essential Commands
 
@@ -55,7 +55,7 @@ The app follows standard Electron patterns with clear separation:
 ### Key Architectural Components
 
 #### Service Layer (Singleton Pattern)
-- **CCUsageService**: Uses the `ccusage` npm package data-loader API to fetch usage data, implementing a 2-second cache optimized for real-time updates. Supports plan configuration and actual session-based reset times.
+- **CCUsageService**: Uses the `ccusage` npm package data-loader API (v16.2.0) to fetch usage data with enhanced timezone and locale support, implementing a 2-second cache optimized for real-time updates. Supports plan configuration and actual session-based reset times.
 - **FileWatcherService**: Monitors `~/.claude/projects/*.jsonl` files for changes using Node.js `fs.watch()`. Provides real-time updates with debouncing (500ms) and rate limiting (1s minimum interval).
 - **SettingsService**: Manages user preferences persistence to `~/.ccseva/settings.json` including plan selection, custom token limits, timezone, and reset hour settings
 - **NotificationService**: Manages macOS notifications with cooldown periods and threshold detection
@@ -188,13 +188,14 @@ The project uses Biome for linting and formatting with these key settings:
 
 ### ccusage Integration Best Practices
 
-When using the `ccusage` package data-loader API:
+When using the `ccusage` package data-loader API (v16.2.0):
 
 1. **Use data-loader functions**: Import `loadSessionBlockData` and `loadDailyUsageData` from `ccusage/data-loader`
 2. **Handle structured data**: The API returns typed JavaScript objects, no JSON parsing needed
 3. **Separate data calls**: Make separate API calls for session and daily data to optimize performance
-4. **Robust error handling**: Implement `try/catch` blocks around API calls to handle missing `~/.claude` configuration
-5. **Caching strategy**: Implement 30-second caching to avoid excessive file system reads
+4. **Enhanced options**: Pass timezone and locale options for improved accuracy and internationalization
+5. **Robust error handling**: Implement `try/catch` blocks around API calls to handle missing `~/.claude` configuration
+6. **Caching strategy**: Implement 2-second caching to avoid excessive file system reads
 
 ## Performance & Optimization
 
@@ -272,7 +273,15 @@ private async handleUsageChange() {
 
 ## Recent Updates and Improvements
 
-### Settings Management & Plan Selection (Latest)
+### ccusage Package Upgrade to v16.2.0 (Latest)
+- **Enhanced API Integration**: Upgraded from ccusage v15.2.0 to v16.2.0 with performance improvements and I/O optimizations
+- **Timezone Support**: Added timezone-aware API calls using `ResetTimeService.getConfiguration().timezone`
+- **Locale Support**: Integrated locale settings for improved internationalization (`locale: 'en-US'`)
+- **Improved Performance**: Benefited from ccusage v16.2.0's memory and I/O optimizations for better file watching responsiveness
+- **API Enhancement**: Updated `loadSessionBlockData` and `loadDailyUsageData` calls with new timezone and locale options
+- **Maintained Compatibility**: Successful upgrade without breaking existing functionality or file watching capabilities
+
+### Settings Management & Plan Selection
 - **Claude Plan Settings**: Added comprehensive plan selection in SettingsPanel with Auto-detect, Pro, Max5, Max20, and Custom options
 - **Persistent Settings**: Extended SettingsService to save plan preferences to `~/.ccseva/settings.json` with backward compatibility
 - **Custom Token Limits**: Custom plan option allows users to set non-standard token limits with validation
