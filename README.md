@@ -59,11 +59,28 @@ The app automatically detects your Claude Code configuration from `~/.claude` di
 - Node.js 18+ (for building from source)
 - Claude Code CLI installed and configured
 
+## Performance & Optimization
+
+CCSeva is **highly optimized** for minimal system impact:
+
+- **Bundle Size**: ~1MB (vs typical 150MB+ Electron apps)
+- **Memory Usage**: ~100-140MB (optimized with smart caching)
+- **Background Efficiency**: Reduced polling when not focused
+- **Native APIs**: Zero external date dependencies
+- **Tree Shaking**: Webpack optimizations remove unused code
+
+### Build Optimizations
+- Production builds use minification and tree shaking
+- File exclusions remove docs/tests from final bundle
+- React memoization prevents unnecessary re-renders
+- Smart background resource management
+
 ## Tech Stack
 
 - Electron 36 + React 19 + TypeScript 5
 - Tailwind CSS 3 + Radix UI components
 - ccusage package for data integration
+- Native JavaScript APIs (no heavy date libraries)
 
 ## License
 

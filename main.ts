@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BrowserWindow, Tray, app, ipcMain, nativeImage, screen } from 'electron';
 import { CCUsageService } from './src/services/ccusageService.js';
+import { FileWatcherService } from './src/services/fileWatcherService.js';
 import { NotificationService } from './src/services/notificationService.js';
 import { SettingsService } from './src/services/settingsService.js';
 
@@ -14,16 +15,20 @@ class CCSevaApp {
   private tray: Tray | null = null;
   private window: BrowserWindow | null = null;
   private usageService: CCUsageService;
+  private fileWatcherService: FileWatcherService;
   private notificationService: NotificationService;
   private settingsService: SettingsService;
   private updateInterval: NodeJS.Timeout | null = null;
+  private fallbackInterval: NodeJS.Timeout | null = null;
   private displayInterval: NodeJS.Timeout | null = null;
   private showPercentage = true;
   private cachedMenuBarData: any = null;
   private menuBarDisplayMode: 'percentage' | 'cost' | 'alternate' = 'alternate';
+  private useFileWatching = true;
 
   constructor() {
     this.usageService = CCUsageService.getInstance();
+    this.fileWatcherService = new FileWatcherService();
     this.notificationService = NotificationService.getInstance();
     this.settingsService = SettingsService.getInstance();
   }
@@ -44,7 +49,7 @@ class CCSevaApp {
     this.createTray();
     this.createWindow();
     this.setupIPC();
-    this.startUsagePolling();
+    this.startUsageMonitoring();
     
     // Only start display toggle if mode is 'alternate'
     if (this.menuBarDisplayMode === 'alternate') {
@@ -59,6 +64,15 @@ class CCSevaApp {
       if (this.window === null) {
         this.createWindow();
       }
+    });
+
+    // File watching doesn't need focus/blur optimization since it's event-driven
+    app.on('browser-window-blur', () => {
+      console.log('Window lost focus - file watching continues normally');
+    });
+
+    app.on('browser-window-focus', () => {
+      console.log('Window gained focus - file watching continues normally');
     });
   }
 
@@ -188,12 +202,7 @@ class CCSevaApp {
     });
 
     ipcMain.handle('quit-app', () => {
-      if (this.updateInterval) {
-        clearInterval(this.updateInterval);
-      }
-      if (this.displayInterval) {
-        clearInterval(this.displayInterval);
-      }
+      this.cleanup();
       app.quit();
     });
 
@@ -249,19 +258,83 @@ class CCSevaApp {
     });
   }
 
-  private startUsagePolling() {
-    // Update every 30 seconds
-    this.updateInterval = setInterval(async () => {
-      await this.updateTrayTitle();
+  private startUsageMonitoring() {
+    // Try to start file watching first
+    if (this.useFileWatching) {
+      const watchingStarted = this.fileWatcherService.startWatching(() => {
+        this.handleUsageChange();
+      });
 
-      // Notify renderer if window is open
-      if (this.window && !this.window.isDestroyed()) {
-        this.window.webContents.send('usage-updated');
+      if (watchingStarted) {
+        console.log('Real-time file watching enabled');
+        // Start fallback polling as backup (longer interval)
+        this.startFallbackPolling();
+      } else {
+        console.warn('File watching failed, falling back to polling');
+        this.useFileWatching = false;
+        this.startPolling();
       }
-    }, 30000);
+    } else {
+      console.log('Using polling mode');
+      this.startPolling();
+    }
 
     // Initial update
     setTimeout(() => this.updateTrayTitle(), 1000);
+  }
+
+  private async handleUsageChange() {
+    console.log('Usage change detected - updating display');
+    
+    // Invalidate cache to force fresh data fetch
+    this.usageService.invalidateCache();
+    
+    await this.updateTrayTitle();
+
+    // Notify renderer if window is open
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.webContents.send('usage-updated');
+    }
+  }
+
+  private startPolling() {
+    // Traditional polling every 30 seconds (fallback mode)
+    this.updateInterval = setInterval(async () => {
+      await this.handleUsageChange();
+    }, 30000);
+  }
+
+  private startFallbackPolling() {
+    // Long interval polling as safety backup (5 minutes)
+    this.fallbackInterval = setInterval(async () => {
+      console.log('Fallback polling check');
+      await this.updateTrayTitle();
+    }, 300000); // 5 minutes
+  }
+
+  private cleanup() {
+    console.log('Cleaning up CCSeva resources...');
+    
+    // Stop file watching
+    if (this.fileWatcherService) {
+      this.fileWatcherService.stopWatching();
+    }
+
+    // Clear all intervals
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+
+    if (this.fallbackInterval) {
+      clearInterval(this.fallbackInterval);
+      this.fallbackInterval = null;
+    }
+
+    if (this.displayInterval) {
+      clearInterval(this.displayInterval);
+      this.displayInterval = null;
+    }
   }
 
   private showWindow() {

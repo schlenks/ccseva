@@ -79,7 +79,7 @@ export class CCUsageService {
   private static instance: CCUsageService;
   private cachedStats: UsageStats | null = null;
   private lastUpdate = 0;
-  private readonly CACHE_DURATION = 3000; // 3 seconds like Python script
+  private readonly CACHE_DURATION = 2000; // 2 seconds - shorter for file watching mode
   private resetTimeService: ResetTimeService;
   private sessionTracker: SessionTracker;
   private historicalBlocks: SessionBlock[] = []; // Store session blocks for analysis
@@ -137,6 +137,16 @@ export class CCUsageService {
 
     // Clear cache to force recalculation with new config
     this.cachedStats = null;
+  }
+
+  /**
+   * Invalidate cache to force fresh data fetch on next request
+   * Called by file watcher when usage files change
+   */
+  invalidateCache(): void {
+    console.log('CCUsageService: Cache invalidated by file change');
+    this.cachedStats = null;
+    this.lastUpdate = 0;
   }
 
   async getUsageStats(): Promise<UsageStats> {
