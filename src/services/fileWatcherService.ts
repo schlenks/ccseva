@@ -37,7 +37,7 @@ export class FileWatcherService {
       // Watch the projects directory where JSONL usage files are written
       this.watcher = fs.watch(projectsPath, { recursive: true }, (eventType, filename) => {
         // Only react to JSONL file changes (usage data files)
-        if (filename && filename.endsWith('.jsonl')) {
+        if (filename?.endsWith('.jsonl')) {
           console.log(`FileWatcher: Detected ${eventType} on ${filename}`);
           this.handleFileChange(callback);
         }
